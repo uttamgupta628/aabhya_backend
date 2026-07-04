@@ -44,7 +44,16 @@ const createDonation = asyncHandler(async (req, res) => {
   // Create a Stripe Checkout Session for this donation. Amount is in INR
   // (matches the ₹ symbol in DonationForm.tsx) — Stripe wants the smallest
   // currency unit, so paise.
+  //
+  // NOTE: success_url/cancel_url must be a single valid URL. CLIENT_URL is a
+  // comma-separated list (used for CORS across multiple frontends), so it
+  // can't be used directly here — use a dedicated single-URL env var instead.
   try {
+    const publicSiteUrl = process.env.PUBLIC_SITE_URL;
+    if (!publicSiteUrl) {
+      throw new Error("PUBLIC_SITE_URL env var is not set — cannot build Stripe redirect URLs");
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -63,8 +72,8 @@ const createDonation = asyncHandler(async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${process.env.CLIENT_URL}/donation/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/Donation`,
+      success_url: `${publicSiteUrl}/donation/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${publicSiteUrl}/Donation`,
       metadata: { donationId: donation._id.toString() },
     });
 
