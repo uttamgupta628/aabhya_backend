@@ -1,21 +1,11 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-let transporter;
+let resend;
 
-const getTransporter = () => {
-  if (transporter) return transporter;
-
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT) || 587,
-    secure: Number(process.env.SMTP_PORT) === 465,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  });
-
-  return transporter;
+const getResend = () => {
+  if (resend) return resend;
+  resend = new Resend(process.env.RESEND_API_KEY);
+  return resend;
 };
 
 /**
@@ -23,18 +13,21 @@ const getTransporter = () => {
  * never breaks the API response for the person who just submitted a form.
  */
 const sendEmail = async ({ to, subject, html }) => {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn(`SMTP not configured — skipped email to ${to} ("${subject}")`);
+  if (!process.env.RESEND_API_KEY) {
+    console.warn(`RESEND_API_KEY not configured — skipped email to ${to} ("${subject}")`);
     return;
   }
 
   try {
-    await getTransporter().sendMail({
-      from: `"Aabhya Foundation" <${process.env.FROM_EMAIL || process.env.SMTP_USER}>`,
+    const { error } = await getResend().emails.send({
+      from: process.env.FROM_EMAIL || "Aabhya Foundation <onboarding@resend.dev>",
       to,
       subject,
       html,
     });
+    if (error) {
+      console.error(`Failed to send email to ${to}:`, error.message || error);
+    }
   } catch (err) {
     console.error(`Failed to send email to ${to}:`, err.message);
   }
