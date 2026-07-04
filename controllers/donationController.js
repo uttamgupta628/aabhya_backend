@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Donation = require("../models/Donation");
 const Cause = require("../models/Cause");
 const stripe = require("../config/stripe");
-const { sendDonationLinkEmail, notifyAdminNewDonation } = require("../utils/emailService");
+const { sendDonationLinkEmail, sendDonationSuccessEmail, notifyAdminNewDonation } = require("../utils/emailService");
 
 const DONATION_TYPE_LABELS = {
   love_offering: "Love Offering",
@@ -135,7 +135,20 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
     const session = event.data.object;
     const donationId = session.metadata?.donationId;
     if (donationId) {
-      await Donation.findByIdAndUpdate(donationId, { status: "completed" });
+      const donation = await Donation.findByIdAndUpdate(
+        donationId,
+        { status: "completed" },
+        { new: true }
+      );
+
+      if (donation) {
+        sendDonationSuccessEmail({
+          to: donation.email,
+          firstName: donation.firstName,
+          amount: donation.amount,
+          causeTitle: donation.causeTitle,
+        });
+      }
     }
   }
 

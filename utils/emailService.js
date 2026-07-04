@@ -75,6 +75,25 @@ const sendDonationLinkEmail = async ({ to, firstName, amount, paymentLink, cause
     ),
   });
 
+// Sent once Stripe confirms payment succeeded (checkout.session.completed webhook)
+const sendDonationSuccessEmail = async ({ to, firstName, amount, causeTitle }) =>
+  sendEmail({
+    to,
+    subject: "Your donation to Aabhya Foundation is confirmed 🎉",
+    html: wrapper(
+      `Thank you, ${firstName}!`,
+      `<p style="color:#4b5563;line-height:1.6;">
+        We've successfully received your payment of <strong>₹${amount}</strong>${
+        causeTitle ? ` towards <strong>${causeTitle}</strong>` : ""
+      }.
+      </p>
+      <p style="color:#4b5563;line-height:1.6;">
+        Your generosity means a lot to the people we serve. We'll keep you updated on the impact
+        your donation makes.
+      </p>`
+    ),
+  });
+
 const notifyAdminNewDonation = async ({ adminEmail, firstName, lastName, amount, email, causeTitle }) =>
   sendEmail({
     to: adminEmail,
@@ -142,6 +161,7 @@ const notifyAdminNewVolunteerApplication = async ({ adminEmail, fullName, email,
 
 module.exports = {
   sendDonationLinkEmail,
+  sendDonationSuccessEmail,
   notifyAdminNewDonation,
   sendContactAckEmail,
   notifyAdminNewContact,
