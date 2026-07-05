@@ -2,7 +2,11 @@ const asyncHandler = require("express-async-handler");
 const Donation = require("../models/Donation");
 const Cause = require("../models/Cause");
 const stripe = require("../config/stripe");
-const { sendDonationLinkEmail, notifyAdminNewDonation } = require("../utils/emailService");
+const {
+  sendDonationLinkEmail,
+  sendDonationSuccessEmail,
+  notifyAdminNewDonation,
+} = require("../utils/emailService");
 
 const DONATION_TYPE_LABELS = {
   love_offering: "Love Offering",
@@ -185,12 +189,26 @@ const updateDonation = asyncHandler(async (req, res) => {
     throw new Error("Donation not found");
   }
 
+  const wasCompleted = donation.status === "completed";
+
   const fields = ["status", "paymentLink"];
   fields.forEach((f) => {
     if (req.body[f] !== undefined) donation[f] = req.body[f];
   });
 
   const updated = await donation.save();
+
+  // Only fire the confirmation email the moment status *becomes* "completed" —
+  // guards against re-saving an already-completed donation and double-emailing.
+  if (!wasCompleted && updated.status === "completed") {
+    sendDonationSuccessEmail({
+      to: updated.email,
+      firstName: updated.firstName,
+      amount: updated.amount,
+      causeTitle: updated.causeTitle,
+    });
+  }
+
   res.json({ success: true, data: updated });
 });
 
