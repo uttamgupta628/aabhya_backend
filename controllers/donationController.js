@@ -21,9 +21,13 @@ const createDonation = asyncHandler(async (req, res) => {
     throw new Error("Amount, first name, last name and email are required");
   }
   if (Number(amount) <= 0) {
-    res.status(400);
-    throw new Error("Amount must be greater than 0");
-  }
+  res.status(400);
+  throw new Error("Amount must be greater than 0");
+}
+if (paymentMethod === "card" && Number(amount) < 50) {
+  res.status(400);
+  throw new Error("Minimum donation amount for card payments is ₹50");
+}
 
   let causeRef = null;
   if (causeTitle) {
