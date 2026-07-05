@@ -4,6 +4,11 @@ const validator = require("validator");
 const donationSchema = new mongoose.Schema(
   {
     amount: { type: Number, required: true, min: 1 },
+    paymentMethod: {
+      type: String,
+      enum: ["card", "upi"],
+      default: "card",
+    },
     donationType: {
       type: String,
       enum: ["love_offering", "sponsorship", "one_time"],

@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler");
 const Donation = require("../models/Donation");
 const Cause = require("../models/Cause");
 const stripe = require("../config/stripe");
-const { sendDonationLinkEmail, sendDonationSuccessEmail, notifyAdminNewDonation } = require("../utils/emailService");
+const { sendDonationLinkEmail, notifyAdminNewDonation } = require("../utils/emailService");
 
 const DONATION_TYPE_LABELS = {
   love_offering: "Love Offering",
@@ -14,7 +14,7 @@ const DONATION_TYPE_LABELS = {
 // @route   POST /api/donations
 // @access  Public
 const createDonation = asyncHandler(async (req, res) => {
-  const { amount, donationType, firstName, lastName, email, causeTitle } = req.body;
+  const { amount, paymentMethod, donationType, firstName, lastName, email, causeTitle } = req.body;
 
   if (!amount || !firstName || !lastName || !email) {
     res.status(400);
@@ -33,6 +33,7 @@ const createDonation = asyncHandler(async (req, res) => {
 
   const donation = await Donation.create({
     amount,
+    paymentMethod: paymentMethod === "upi" ? "upi" : "card",
     donationType,
     firstName,
     lastName,
@@ -41,19 +42,33 @@ const createDonation = asyncHandler(async (req, res) => {
     causeTitle: causeTitle || null,
   });
 
+  // UPI donations are settled directly between the donor's UPI app and the
+  // org's VPA — there's no gateway session to create. The donation stays
+  // "pending" until an admin verifies the transfer and marks it completed.
+  if (donation.paymentMethod === "upi") {
+    if (process.env.ADMIN_NOTIFICATION_EMAIL) {
+      notifyAdminNewDonation({
+        adminEmail: process.env.ADMIN_NOTIFICATION_EMAIL,
+        firstName,
+        lastName,
+        amount,
+        email,
+        causeTitle,
+      });
+    }
+    res.status(201).json({
+      success: true,
+      message: "Donation logged. Complete the UPI payment using the QR code shown.",
+      data: donation,
+      paymentLink: null,
+    });
+    return;
+  }
+
   // Create a Stripe Checkout Session for this donation. Amount is in INR
   // (matches the ₹ symbol in DonationForm.tsx) — Stripe wants the smallest
   // currency unit, so paise.
-  //
-  // NOTE: success_url/cancel_url must be a single valid URL. CLIENT_URL is a
-  // comma-separated list (used for CORS across multiple frontends), so it
-  // can't be used directly here — use a dedicated single-URL env var instead.
   try {
-    const publicSiteUrl = process.env.PUBLIC_SITE_URL;
-    if (!publicSiteUrl) {
-      throw new Error("PUBLIC_SITE_URL env var is not set — cannot build Stripe redirect URLs");
-    }
-
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -72,8 +87,8 @@ const createDonation = asyncHandler(async (req, res) => {
           quantity: 1,
         },
       ],
-      success_url: `${publicSiteUrl}/donation/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${publicSiteUrl}/Donation`,
+      success_url: `${process.env.CLIENT_URL?.split(",")[0]?.trim()}/donation/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL?.split(",")[0]?.trim()}/Donation`,
       metadata: { donationId: donation._id.toString() },
     });
 
@@ -135,20 +150,7 @@ const handleStripeWebhook = asyncHandler(async (req, res) => {
     const session = event.data.object;
     const donationId = session.metadata?.donationId;
     if (donationId) {
-      const donation = await Donation.findByIdAndUpdate(
-        donationId,
-        { status: "completed" },
-        { new: true }
-      );
-
-      if (donation) {
-        sendDonationSuccessEmail({
-          to: donation.email,
-          firstName: donation.firstName,
-          amount: donation.amount,
-          causeTitle: donation.causeTitle,
-        });
-      }
+      await Donation.findByIdAndUpdate(donationId, { status: "completed" });
     }
   }
 

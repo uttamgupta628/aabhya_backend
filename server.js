@@ -18,6 +18,7 @@ const donationRoutes = require("./routes/donationRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
+const configRoutes = require("./routes/configRoutes");
 
 connectDB();
 
@@ -68,6 +69,7 @@ app.use("/api/volunteers", volunteerRoutes);
 app.use("/api/volunteer-applications", volunteerApplicationRoutes);
 app.use("/api/donations", donationRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/config", configRoutes);
 app.use("/api/newsletter", newsletterRoutes);
 
 app.use(notFound);
