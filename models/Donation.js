@@ -34,11 +34,15 @@ const donationSchema = new mongoose.Schema(
     causeTitle: { type: String, default: null }, // fallback if no ObjectId match found
     status: {
       type: String,
-      enum: ["pending", "link_sent", "completed", "failed"],
+      enum: ["pending", "link_sent", "utr_submitted", "completed", "failed"],
       default: "pending",
     },
     // Populated once a payment link / gateway session is generated
     paymentLink: { type: String, default: null },
+    // Donor-submitted UPI transaction reference (UTR/Ref No) — self-reported,
+    // not verified automatically. Admin cross-checks against bank statement.
+    utrReference: { type: String, default: null, trim: true },
+    utrSubmittedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

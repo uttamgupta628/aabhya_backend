@@ -190,4 +190,57 @@ const updateDonation = asyncHandler(async (req, res) => {
   res.json({ success: true, data: updated });
 });
 
-module.exports = { createDonation, getDonations, updateDonation, handleStripeWebhook };
+// @desc    Donor self-reports their UPI transaction reference (UTR/Ref No)
+//          after completing payment via the QR code. Not verified automatically —
+//          flips status to "utr_submitted" so admins know to cross-check it
+//          against their bank/UPI statement.
+// @route   PUT /api/donations/:id/utr
+// @access  Public
+const submitUtrReference = asyncHandler(async (req, res) => {
+  const { utrReference } = req.body;
+
+  if (!utrReference || !utrReference.trim()) {
+    res.status(400);
+    throw new Error("A transaction reference number is required");
+  }
+
+  const donation = await Donation.findById(req.params.id);
+  if (!donation) {
+    res.status(404);
+    throw new Error("Donation not found");
+  }
+
+  donation.utrReference = utrReference.trim();
+  donation.utrSubmittedAt = new Date();
+  // Don't downgrade a donation an admin already marked completed/failed
+  if (donation.status === "pending" || donation.status === "link_sent") {
+    donation.status = "utr_submitted";
+  }
+
+  await donation.save();
+
+  if (process.env.ADMIN_NOTIFICATION_EMAIL) {
+    notifyAdminNewDonation({
+      adminEmail: process.env.ADMIN_NOTIFICATION_EMAIL,
+      firstName: donation.firstName,
+      lastName: donation.lastName,
+      amount: donation.amount,
+      email: donation.email,
+      causeTitle: donation.causeTitle,
+    });
+  }
+
+  res.json({
+    success: true,
+    message: "Thanks! We'll verify your payment and confirm it shortly.",
+    data: donation,
+  });
+});
+
+module.exports = {
+  createDonation,
+  getDonations,
+  updateDonation,
+  handleStripeWebhook,
+  submitUtrReference,
+};
