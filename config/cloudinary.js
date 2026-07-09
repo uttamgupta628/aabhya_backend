@@ -11,7 +11,9 @@ cloudinary.config({
  * Reusable storage factory.
  * folder   -> cloudinary folder to organize uploads (e.g. "causes", "events")
  * resource -> "image" | "video" | "auto" (auto lets Cloudinary detect, needed for CharityFund videos)
- */
+//  */
+
+// makeStorage is used in upload.js to create multer storage engines for different routes. Each route can specify its own folder and resource type (image, video, or auto).
 const makeStorage = (folder, resource = "image") =>
   new CloudinaryStorage({
     cloudinary,
