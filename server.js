@@ -47,6 +47,9 @@ app.use(
   })
 );
 
+app.get("/", (req, res) => {
+  res.json({ message: "GSB API is running 🚀" });
+});
 // Stripe webhook needs the RAW body for signature verification, so it must
 // be mounted before express.json() parses the body on every other route.
 app.use("/api/webhooks", webhookRoutes);
