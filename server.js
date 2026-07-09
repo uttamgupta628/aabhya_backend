@@ -17,8 +17,8 @@ const contactRoutes = require("./routes/contactRoutes");
 const newsletterRoutes = require("./routes/newsletterRoutes");
 const webhookRoutes = require("./routes/webhookRoutes");
 const configRoutes = require("./routes/configRoutes");
-const galleryVideoRoutes = require("./routes/galleryVideoRoutes");
-const galleryPhotoRoutes = require("./routes/galleryPhotoRoutes");
+const galleryVideoRoutes = require("./routes/Galleryvideoroutes");
+const galleryPhotoRoutes = require("./routes/Galleryphotoroutes");
 connectDB();
 const app = express();
 // Core middleware
