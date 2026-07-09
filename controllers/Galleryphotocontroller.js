@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const GalleryPhoto = require("../models/GalleryPhoto");
+const GalleryPhoto = require("../models/Galleryphoto");
 const { deleteCloudinaryAsset } = require("../utils/cloudinaryHelpers");
 
 // @desc    Get all active gallery photos
