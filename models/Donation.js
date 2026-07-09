@@ -32,6 +32,20 @@ const donationSchema = new mongoose.Schema(
       default: null,
     },
     causeTitle: { type: String, default: null }, // fallback if no ObjectId match found
+    // ── Fields added to match DonationForm.tsx ──
+    // "I Want to Donate for" dropdown on the form (general/food/clothes/education/medical).
+    // Kept separate from `cause`/`causeTitle` above, which link to a specific Cause document.
+    fundCategory: {
+      type: String,
+      enum: ["general", "food", "clothes", "education", "medical", null],
+      default: null,
+    },
+    phone: { type: String, trim: true, default: null },
+    aadharNumber: { type: String, trim: true, default: null },
+    // "Do You Want 80G Tax Benefit" — stored as submitted ("yes"/"no")
+    wantsTaxBenefit: { type: String, enum: ["yes", "no", null], default: null },
+    // "Are You Citizen In India"
+    isIndianCitizen: { type: String, enum: ["yes", "no", null], default: null },
     status: {
       type: String,
       enum: ["pending", "link_sent", "utr_submitted", "completed", "failed"],

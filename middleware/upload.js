@@ -19,12 +19,32 @@ const uploadEventImage = multer({
   storage: makeStorage("events", "image"),
   limits: { fileSize: MAX_IMAGE_SIZE },
 });
+
 const uploadTestimonialAvatar = multer({
   storage: makeStorage("testimonials", "image"),
   limits: { fileSize: MAX_IMAGE_SIZE },
 });
+
 const uploadVolunteerImage = multer({
   storage: makeStorage("volunteers", "image"),
+  limits: { fileSize: MAX_IMAGE_SIZE },
+});
+
+const uploadVolunteerApplicationImage = multer({
+  storage: makeStorage("volunteer-applications", "image"),
+  limits: { fileSize: MAX_IMAGE_SIZE },
+});
+
+// Gallery — Video Reels (GalleryPage.tsx "Videos" tab). Bump the limit above
+// 60MB here if your Sankalp Sunday clips regularly run larger than that.
+const uploadGalleryVideo = multer({
+  storage: makeStorage("gallery-videos", "video"),
+  limits: { fileSize: MAX_VIDEO_SIZE },
+});
+
+// Gallery — Photo Moments (GalleryPage.tsx "Photos" tab)
+const uploadGalleryPhoto = multer({
+  storage: makeStorage("gallery-photos", "image"),
   limits: { fileSize: MAX_IMAGE_SIZE },
 });
 
@@ -33,4 +53,7 @@ module.exports = {
   uploadEventImage,
   uploadTestimonialAvatar,
   uploadVolunteerImage,
+  uploadVolunteerApplicationImage,
+  uploadGalleryVideo,
+  uploadGalleryPhoto,
 };

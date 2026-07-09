@@ -18,20 +18,46 @@ const DONATION_TYPE_LABELS = {
 // @route   POST /api/donations
 // @access  Public
 const createDonation = asyncHandler(async (req, res) => {
-  const { amount, paymentMethod, donationType, firstName, lastName, email, causeTitle } = req.body;
+  const {
+    amount,
+    paymentMethod,
+    donationType,
+    email,
+    causeTitle,
+    // DonationForm.tsx sends these — supported alongside the firstName/lastName
+    // shape used elsewhere (e.g. an admin-triggered donation)
+    name,
+    firstName: firstNameInput,
+    lastName: lastNameInput,
+    phone,
+    aadhar,
+    cause, // "I Want to Donate for" dropdown value (general/food/clothes/education/medical)
+    taxBenefit,
+    citizen,
+  } = req.body;
+
+  // Resolve first/last name — DonationForm.tsx only collects a single "name"
+  // field, so split it; fall back to explicit firstName/lastName if sent.
+  let firstName = firstNameInput;
+  let lastName = lastNameInput;
+  if ((!firstName || !lastName) && name) {
+    const parts = String(name).trim().split(/\s+/);
+    firstName = firstName || parts[0] || "";
+    lastName = lastName || (parts.length > 1 ? parts.slice(1).join(" ") : parts[0] || "");
+  }
 
   if (!amount || !firstName || !lastName || !email) {
     res.status(400);
-    throw new Error("Amount, first name, last name and email are required");
+    throw new Error("Amount, name and email are required");
   }
   if (Number(amount) <= 0) {
-  res.status(400);
-  throw new Error("Amount must be greater than 0");
-}
-if (paymentMethod === "card" && Number(amount) < 50) {
-  res.status(400);
-  throw new Error("Minimum donation amount for card payments is ₹50");
-}
+    res.status(400);
+    throw new Error("Amount must be greater than 0");
+  }
+  if (paymentMethod === "card" && Number(amount) < 50) {
+    res.status(400);
+    throw new Error("Minimum donation amount for card payments is ₹50");
+  }
 
   let causeRef = null;
   if (causeTitle) {
@@ -48,6 +74,11 @@ if (paymentMethod === "card" && Number(amount) < 50) {
     email,
     cause: causeRef,
     causeTitle: causeTitle || null,
+    fundCategory: cause || null,
+    phone: phone || null,
+    aadharNumber: aadhar || null,
+    wantsTaxBenefit: taxBenefit === "yes" || taxBenefit === "no" ? taxBenefit : null,
+    isIndianCitizen: citizen === "yes" || citizen === "no" ? citizen : null,
   });
 
   // UPI donations are settled directly between the donor's UPI app and the

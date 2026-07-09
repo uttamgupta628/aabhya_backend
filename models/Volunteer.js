@@ -7,8 +7,8 @@ const volunteerSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     role: { type: String, required: true, trim: true }, // e.g. "Coordinator"
     image: {
-      url: { type: String, required: true },
-      publicId: { type: String, required: true },
+      url: { type: String, default: null },
+      publicId: { type: String, default: null },
     },
     instagram: { type: String, default: "#" },
     isActive: { type: Boolean, default: true },

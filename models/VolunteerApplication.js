@@ -17,11 +17,19 @@ const volunteerApplicationSchema = new mongoose.Schema(
     address: { type: String, trim: true },
     county: { type: String, trim: true }, // county / state
     message: { type: String, trim: true },
+    // Optional photo uploaded by the applicant with the enrollment form
+    image: {
+      url: { type: String, default: null },
+      publicId: { type: String, default: null },
+    },
     status: {
       type: String,
       enum: ["pending", "contacted", "approved", "rejected"],
       default: "pending",
     },
+    // Set once this application is approved and a matching entry is created
+    // in the Volunteer collection (the team grid shown on VolunteerPage.tsx)
+    linkedVolunteer: { type: mongoose.Schema.Types.ObjectId, ref: "Volunteer", default: null },
   },
   { timestamps: true }
 );

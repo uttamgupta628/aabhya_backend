@@ -1,5 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const VolunteerApplication = require("../models/VolunteerApplication");
+const Volunteer = require("../models/Volunteer");
+const { deleteCloudinaryAsset } = require("../utils/cloudinaryHelpers");
 const {
   sendVolunteerAckEmail,
   notifyAdminNewVolunteerApplication,
@@ -25,6 +27,7 @@ const submitVolunteerApplication = asyncHandler(async (req, res) => {
     address,
     county,
     message,
+    image: req.file ? { url: req.file.path, publicId: req.file.filename } : undefined,
   });
 
   sendVolunteerAckEmail({ to: email, fullName: name });
@@ -67,6 +70,35 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
   }
   if (req.body.status) application.status = req.body.status;
   const updated = await application.save();
+
+  // Keep the public "Volunteer" team grid (VolunteerPage.tsx / VolunteerSection.tsx)
+  // in sync with approval status.
+  if (updated.status === "approved") {
+    if (updated.linkedVolunteer) {
+      // Already promoted before — just make sure it's visible again and refreshed.
+      await Volunteer.findByIdAndUpdate(updated.linkedVolunteer, {
+        name: updated.fullName,
+        role: updated.occupation || "Volunteer",
+        isActive: true,
+        ...(updated.image?.url ? { image: updated.image } : {}),
+      });
+    } else {
+      const volunteer = await Volunteer.create({
+        name: updated.fullName,
+        role: updated.occupation || "Volunteer",
+        instagram: "#",
+        isActive: true,
+        image: updated.image?.url ? updated.image : undefined,
+      });
+      updated.linkedVolunteer = volunteer._id;
+      await updated.save();
+    }
+  } else if (updated.linkedVolunteer) {
+    // Status moved away from "approved" — hide from the public grid without
+    // deleting it, in case it gets re-approved later.
+    await Volunteer.findByIdAndUpdate(updated.linkedVolunteer, { isActive: false });
+  }
+
   res.json({ success: true, data: updated });
 });
 
@@ -79,6 +111,15 @@ const deleteVolunteerApplication = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Application not found");
   }
+
+  if (application.linkedVolunteer) {
+    const volunteer = await Volunteer.findById(application.linkedVolunteer);
+    if (volunteer) {
+      await deleteCloudinaryAsset(volunteer.image?.publicId, "image");
+      await volunteer.deleteOne();
+    }
+  }
+
   await application.deleteOne();
   res.json({ success: true, message: "Application deleted" });
 });
