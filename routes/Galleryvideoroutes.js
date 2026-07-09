@@ -6,7 +6,7 @@ const {
   createGalleryVideo,
   updateGalleryVideo,
   deleteGalleryVideo,
-} = require("../controllers/galleryVideoController");
+} = require("../controllers/Galleryvideocontroller");
 const { protect } = require("../middleware/auth");
 const { uploadGalleryVideo } = require("../middleware/upload");
 

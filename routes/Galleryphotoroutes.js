@@ -6,7 +6,7 @@ const {
   createGalleryPhoto,
   updateGalleryPhoto,
   deleteGalleryPhoto,
-} = require("../controllers/galleryPhotoController");
+} = require("../controllers/Galleryphotocontroller");
 const { protect } = require("../middleware/auth");
 const { uploadGalleryPhoto } = require("../middleware/upload");
 
