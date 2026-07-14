@@ -18,6 +18,13 @@ const submitVolunteerApplication = asyncHandler(async (req, res) => {
     throw new Error("Full name, email and phone are required");
   }
 
+  // Prevent duplicate applications from the same email
+  const existing = await VolunteerApplication.findOne({ email: email.toLowerCase().trim() });
+  if (existing) {
+    res.status(409);
+    throw new Error("An application with this email has already been submitted.");
+  }
+
   const application = await VolunteerApplication.create({
     fullName: name,
     email,
